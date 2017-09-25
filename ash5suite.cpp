@@ -21,12 +21,12 @@
 
 typedef Eigen::Vector3d AshCrossSectionPtType;
 
-AshStateType reprojectFromPoincareSection (AshCrossSectionPtType pt)
+AshStateType reprojectFromPoincareSection (const AshCrossSectionPtType &pt)
 {
     return {pt[0], pt[1], 1.2, pt[2]};
 }
 
-AshCrossSectionPtType projectOnPoincareSection (AshStateType pt)
+AshCrossSectionPtType projectOnPoincareSection (const AshStateType &pt)
 {
     return {pt[0], pt[1], pt[3]};
 }
@@ -214,7 +214,7 @@ public:
         return params;
     }
 private:
-    bool checkConfigFileForConsistency(boost::property_tree::ptree config)
+    bool checkConfigFileForConsistency(boost::property_tree::ptree config) const
     {
         bool hasNoErrors = true;
         if (config.get<std::string>("mode")=="Once")
@@ -268,11 +268,11 @@ public:
         approximateReturnTime = config.approximateReturnTime;
         skipTime = config.skipTime;
     }
-    std::vector<AshStateType> computeTrajectory(const AshCrossSectionPtType& startPt, int iterMax=1)
+    std::vector<AshStateType> computeTrajectory(const AshCrossSectionPtType& startPt, int iterMax=1) const
     {
         // There are some moments that are sketchy in that function
         // For example: what if we had started not on Poincare section?
-        // How to chech reliably that trajectory is ok
+        // How to check reliably that trajectory is ok
         Ashwin5osc system(rCurrent, aCurrent, bCurrent);
         Ash_Section_Event evt;
         int maxEvtsCapacity = iterMax+1;
@@ -322,7 +322,7 @@ public:
     }
 };
 
-AshCrossSectionPtType solveSLE(Eigen::Matrix3d A, AshCrossSectionPtType b)
+AshCrossSectionPtType solveSLE(const Eigen::Matrix3d& A, const AshCrossSectionPtType& b)
 {
     AshCrossSectionPtType result = A.colPivHouseholderQr().solve(b);
     return result;
@@ -502,7 +502,7 @@ int main(int argc, char* argv[])
         std::chrono::time_point<std::chrono::system_clock> start, end;
         std::chrono::duration<double> elapsed_seconds;
      // PROCESS COMMAND LINE OPTIONS, READ THE INI-FILE AND INITIALIZE STARTING FIXED POINT AND PARAMETERS
-        Configuration config(argc, argv);
+        const Configuration config(argc, argv);
         if (!config.isConfigurationConsistent)
         {
             std::cerr<<"Config file is not consistent, terminating program"<<std::endl;
@@ -526,18 +526,18 @@ int main(int argc, char* argv[])
         // assign parameters
             auto params = config.getParameterValues(i, 0);//!
             std::cout<<"\n\n"<<i<<"/"<<(config.v2_N-1)<<" r = "<<params["r"]<<" a = "<<params["a"]<<" b = "<<params["b"]<<std::endl;
-            bool fixPt_success_status;
+            bool fixPtSuccessStatus;
             NewtonSolver ns(config);
             PoincareMap pm(params, config);
             auto F = std::bind(&PoincareMap::residueMap, pm, std::placeholders::_1);
             pt = ns.performNewtonMethod(F, pt);
-            fixPt_success_status = ns.getSuccessStatus();
+            fixPtSuccessStatus = ns.getSuccessStatus();
 //             pt = performNewtonMethodForFixedPointFinding(params, config, pt, fixPt_success_status);
         // #Save info about fixed point in array
 //             std::cout<<"After Newton Method: ";
             results[i][0].fixedPoint = reprojectFromPoincareSection(pt);
 //             std::cout<<"fixedPoint = \n"<<projectOnPoincareSection(results[i][0].fixedPoint)<<std::endl;
-            results[i][0].isFixedPointComputationValid = fixPt_success_status;
+            results[i][0].isFixedPointComputationValid = fixPtSuccessStatus;
             ////////////////////////
 //             PoincareMap pmtest(params, config);
 //             std::cout<<"Instant Re-check of precision 1: \n"<<pmtest.residueMap(projectOnPoincareSection(results[i][0].fixedPoint)).norm()<<std::endl;
@@ -560,12 +560,11 @@ int main(int argc, char* argv[])
                 std::cout<<i<<"/"<<(config.v2_N-1)<<" "<<j<<"/"<<(config.v1_N-1)<<" r = "<<curResult.r<<" a = "<<curResult.a<<" b = "<<curResult.b<<std::endl;
             // #Recalculate fixed point
                 AshCrossSectionPtType fixPt;
-                bool fixpt_success_status;
-                bool attractorComputationValid;
+                bool fixPtSuccessStatus;
                 if (j==0)
                 {
                     fixPt = projectOnPoincareSection(results[i][0].fixedPoint);
-                    fixpt_success_status = results[i][0].isFixedPointComputationValid;
+                    fixPtSuccessStatus = results[i][0].isFixedPointComputationValid;
 //                     std::cout<<"Instant Re-check of fixed point: \n"<<fixPt<<std::endl;
 //                     PoincareMap pmtest(params, config);
 //                     std::cout<<"Instant Re-check of precision 2: \n"<<pmtest.residueMap(fixPt).norm()<<std::endl;
@@ -580,7 +579,7 @@ int main(int argc, char* argv[])
                         PoincareMap pm(params, config);
                         auto F = std::bind(&PoincareMap::residueMap, pm, std::placeholders::_1);
                         fixPt = ns.performNewtonMethod(F, prevApproximation);
-                        fixpt_success_status = ns.getSuccessStatus();
+                        fixPtSuccessStatus = ns.getSuccessStatus();
                         end = std::chrono::system_clock::now();
                         elapsed_seconds = end - start;
                         std::cout<<"Calculating fixed point: "<<elapsed_seconds.count()*1000.0<<"ms"<<std::endl;
@@ -588,11 +587,11 @@ int main(int argc, char* argv[])
                     }
                     else
                     {
-                        fixpt_success_status = false;
+                        fixPtSuccessStatus = false;
                         std::cout<<"ERROR: FIXED POINT CONTINUATION FAILED"<<std::endl;
                     }
                 }
-                curResult.isFixedPointComputationValid = fixpt_success_status;
+                curResult.isFixedPointComputationValid = fixPtSuccessStatus;
             // #Do other stuff if finding fixed point didn't fail
                 bool additionalCalculationsNeeded = config.flags.isEigvalsNeeded || config.flags.isLyapNeeded || config.flags.isDistNeeded || config.flags.isPlotNeeded;
                 if (curResult.isFixedPointComputationValid && additionalCalculationsNeeded)
