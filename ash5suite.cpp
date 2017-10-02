@@ -13,11 +13,15 @@
 #include <map>
 #include "ash5.h"
 #include "dyn_utils.h"
+
+#define EIGEN_DONT_PARALLELIZE
+#define EIGEN_DONT_ALIGN_STATICALLY
 #include <Eigen/Dense>
 #include <chrono>
 #include <Eigen/Eigenvalues>
 #include <complex>
 #include <functional>
+//#include <omp.h>
 
 typedef Eigen::Vector3d AshCrossSectionPtType;
 
@@ -341,7 +345,7 @@ class NewtonSolver
 private:
     double fixPtTol;
     double epsOrt;
-    bool success_status;
+    bool successStatus;
     int maxIterNum;
 public:
     NewtonSolver(const Configuration& config)
@@ -381,12 +385,12 @@ public:
         double precision = l2norm(residue);
 // //     std::cout<<"[Newton] Final point: \n"<<pt<<std::endl;
 // //     std::cout<<"[Newton] Final precision: "<<precision<<std::endl;
-        success_status = (precision < fixPtTol);
+        successStatus = (precision < fixPtTol);
         return pt;
     }
     bool getSuccessStatus()
     {
-        return success_status;
+        return successStatus;
     }
 };
 
@@ -404,7 +408,7 @@ void writeAttractorDataToFile(const int& i, const int& j, const runInfo& curResu
     outFile<<"# b = "<<curResult.b<<std::endl;
     outFile<<"# i = "<<i<<", "<<i<<" / "<<(config.v2_N-1)<<std::endl;
     outFile<<"# j = "<<j<<", "<<j<<" / "<<(config.v1_N-1)<<std::endl;
-    outFile<<std::setprecision(18);
+    outFile<<std::setprecision(15)<<std::fixed;
     outFile<<"# fixed_pt = [ "<<curResult.fixedPoint[0]<<", "
         <<curResult.fixedPoint[1]<<", "
         <<curResult.fixedPoint[2]<<", "
@@ -426,7 +430,7 @@ void writeAttractorDataToFile(const int& i, const int& j, const runInfo& curResu
     {
         outFile<<"# attractor_dist = "<<curResult.attractorDist<<std::endl;
     }
-    outFile<<std::setprecision(18);
+    outFile<<std::setprecision(15)<<std::fixed;
     for (int k = config.mapIterSkip; k <= config.mapIterLast; k++)
     {
         outFile<<std::setw(21)<<std::left<<trajectory[k][0]<<" "
@@ -442,14 +446,14 @@ void writeRunInfo(std::ofstream& outFile, const runInfo& curResult, const Config
     outFile<<curResult.r<<" "<<curResult.a<<" "<<curResult.b;
     if (curResult.isFixedPointComputationValid)
     {
-        outFile<<" ["<<curResult.fixedPoint[0]<<", "
-            <<curResult.fixedPoint[1]<<", "
-            <<curResult.fixedPoint[2]<<", "
-            <<curResult.fixedPoint[3]<<"]";
+        outFile<<" "<<curResult.fixedPoint[0]<<" "
+            <<curResult.fixedPoint[1]<<" "
+            <<curResult.fixedPoint[2]<<" "
+            <<curResult.fixedPoint[3];
     }
     else
     {
-        outFile<<" None";
+        outFile<<" None None None";
     }
     if (config.flags.isDistNeeded)
     {
@@ -470,23 +474,26 @@ void writeRunInfo(std::ofstream& outFile, const runInfo& curResult, const Config
     }
     if (config.flags.isEigvalsNeeded)
     {
-        outFile<<" ["<<curResult.eigvals[0]
-            <<", "<<curResult.eigvals[1]
-            <<", "<<curResult.eigvals[2]<<"]";
-        outFile<<" ["<<std::abs(curResult.eigvals[0])
-            <<", "<<std::abs(curResult.eigvals[1])
-            <<", "<<std::abs(curResult.eigvals[2])<<"]";
+        outFile<<" "<<curResult.eigvals[0].real()
+               <<" "<<curResult.eigvals[0].imag()
+               <<" "<<curResult.eigvals[1].real()
+               <<" "<<curResult.eigvals[1].imag()
+               <<" "<<curResult.eigvals[2].real()
+               <<" "<<curResult.eigvals[2].imag();
+        outFile<<" "<<std::abs(curResult.eigvals[0])
+            <<" "<<std::abs(curResult.eigvals[1])
+            <<" "<<std::abs(curResult.eigvals[2]);
     }
     else
     {
-        outFile<<" None None";
+        outFile<<" None None None None None None None None None";
     }
     outFile<<std::endl;
 }
 
 int main(int argc, char* argv[])
 {
-    std::cout<<std::setprecision(32);
+    std::cout<<std::setprecision(15);
     if (argc < 2)
     {
         std::cout<<"Usage: "<<argv[0]<<" <path to INI file> [options]"<<std::endl;
@@ -547,8 +554,11 @@ int main(int argc, char* argv[])
         std::cout<<"Pre-calculating fixed points in first column: "<<elapsed_seconds.count()*1000.0<<"ms"<<std::endl;
      // #FULL SWEEP
         std::cout<<"\n\nFULL SWEEP"<<std::endl;
+//        Eigen::initParallel();
         for (int j = 0; j < config.v1_N; j++)
         {
+//            #pragma omp parallel for num_threads(1)
+//            #pragma omp parallel for
             for (int i = 0; i < config.v2_N; i++)
             {
                 auto& curResult = results[i][j];
@@ -598,13 +608,13 @@ int main(int argc, char* argv[])
                 {
                     if (config.flags.isEigvalsNeeded)
                     {
-                        double eps_ort = config.jacobiFixPtTypeEps;
+                        double epsOrt = config.jacobiFixPtTypeEps;
                         AshCrossSectionPtType pt = fixPt;
                         PoincareMap pm(params, config);
                         std::cout<<"residue.norm() = "<<pm.residueMap(pt).norm()<<std::endl;
                         Eigen::Matrix3d Jac;
                         auto F = std::bind(&PoincareMap::poincareMap, pm, std::placeholders::_1);
-                        NumericalJacobiMatrix jmat(eps_ort);
+                        NumericalJacobiMatrix jmat(epsOrt);
                         jmat.computeJacobiMatrix(F, pt, Jac);
                         Eigen::EigenSolver<Eigen::Matrix3d> es(Jac);
                         std::cout<<"Jacobi = \n"<<Jac<<std::endl;
@@ -663,8 +673,9 @@ int main(int argc, char* argv[])
         }
         // #SAVE SWEEP RESULTS TO FILE
         std::ofstream outFile("tst-res.txt");
-        outFile<<std::setprecision(18);
-        outFile<<"# r a b fixPt minDist LLE eigv abs_of_eigv"<<std::endl;
+        outFile<<std::setprecision(15)<<std::fixed;
+        outFile<<"# 0 1 2 3        4        5        6        7       8   9          10         11         12         13         14         15           16           17"<<std::endl;
+        outFile<<"# r a b fixPt[0] fixPt[1] fixPt[2] fixPt[3] minDist LLE eigv[0].re eigv[0].im eigv[1].re eigv[1].im eigv[2].re eigv[2].im abs(eigv[0]) abs(eigv[1]) abs(eigv[2])"<<std::endl;
         for(int i = 0; i < config.v2_N; i++)
         {
             for (int j=0; j < config.v1_N; j++)
