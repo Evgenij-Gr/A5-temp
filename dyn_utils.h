@@ -24,17 +24,19 @@ class EventObserver
 {
 private:
     System rhs;
-    Stepper refiner;
     Event event;
+    Stepper refiner;
+public:
+    std::vector< TStateType >& m_states;
+private:
+    double crossingDirection;
+    double evtTolerance;
+    bool isFirstCallToObserver;
     TStateType prevX;
     double prevT;
     double skipT;
     double prevEventTime;
-    double evtTolerance;
-    double crossingDirection;
-    bool isFirstCallToObserver;
 public:
-    std::vector< TStateType >& m_states;
     EventObserver(System S, Event E, Stepper St, std::vector<TStateType> &states, double crDir, double evtTol, double skipTime) :
     rhs(S), event(E), refiner(St), m_states(states), crossingDirection(crDir), evtTolerance(evtTol), skipT(skipTime)
     {

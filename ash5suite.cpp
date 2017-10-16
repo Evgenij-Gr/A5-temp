@@ -200,7 +200,7 @@ public:
             isConfigurationConsistent = false;
         }
     }
-    std::map<std::string, double> getParameterValues(int i, int j)
+    std::map<std::string, double> getParameterValues(int i, int j) const
     {
         std::map<std::string, double> params;
     // initial setup for parameters: taken from "default" section of INI-file
