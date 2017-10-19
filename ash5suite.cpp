@@ -1,19 +1,12 @@
-#include <boost/version.hpp>
-
-#if BOOST_VERSION == 106400
-#include <boost/serialization/array_wrapper.hpp>
-#endif
-
 #include "ash5.h"
 #include "dyn_utils.h"
 
 #define EIGEN_DONT_PARALLELIZE
 #define EIGEN_DONT_ALIGN_STATICALLY
-//#include <Eigen/Dense>
+#include <Eigen/Dense>
 #include <chrono>
-#include <Eigen/Eigenvalues>
 #include <complex>
-#include <functional>
+
 //#include <omp.h>
 
 typedef Eigen::Vector3d AshCrossSectionPtType;
@@ -42,6 +35,10 @@ struct runInfo
 };
 
 #include "configuration.h"
+
+#include <boost/numeric/odeint.hpp>
+
+using namespace boost::numeric::odeint;
 
 class PoincareMap
 {
@@ -99,93 +96,10 @@ public:
     }
 };
 
-class NumericalJacobiMatrix
-{
-private:
-    double epsOrt;
-public:
-    NumericalJacobiMatrix(double eO): epsOrt(eO) {}
-    void computeJacobiMatrix(const std::function<AshCrossSectionPtType(AshCrossSectionPtType)>& F,
-                        const AshCrossSectionPtType& pt, Eigen::Matrix3d& jacobiMatrix)
-    {
-        Eigen::Matrix3d Jac;
-        std::array<AshCrossSectionPtType, 3> orts = {{{1.,0.,0.},{0.,1.,0.},{0.,0.,1.}}};
-        AshCrossSectionPtType F0= F(pt);
-        for (int i = 0; i < 3; i++)
-        {
-            Jac.col(i) = (F(pt + epsOrt * orts[i]) - F0)/epsOrt;
-        }
-        jacobiMatrix = Jac;
-    }
-};
-
-AshCrossSectionPtType solveSLE(const Eigen::Matrix3d& A, const AshCrossSectionPtType& b)
-{
-    AshCrossSectionPtType result = A.colPivHouseholderQr().solve(b);
-    return result;
-}
-
-double l2norm(AshCrossSectionPtType pt)
-{
-    return pt.norm();
-}
-
 typedef AshCrossSectionPtType PtType;
 typedef Eigen::Matrix3d MatType;
 
-class NewtonSolver
-{
-private:
-    double fixPtTol;
-    double epsOrt;
-    bool successStatus;
-    int maxIterNum;
-public:
-    NewtonSolver(const Configuration& config)
-    {
-        fixPtTol = config.fixPtTol;
-        maxIterNum = config.fixPtMaxIter;
-        epsOrt = config.jacobiNewtonEps;
-    }
-    PtType performNewtonMethod(const std::function<PtType(PtType)>& F, const PtType& initPt)
-    {
-// //     std::cout<<"[Newton] Entry point"<<std::endl;
-        PtType pt = initPt;
-        PtType residue = F(pt);
-// //     std::cout<<"[Newton] Init residue = \n"<<residue<<std::endl;
-// //     std::cout<<"[Newton] Init residue norm = "<<residue.norm()<<std::endl;
-        int iterNum = 0;
-        while ((l2norm(residue) > fixPtTol) && (iterNum < maxIterNum))
-        {
-// //         std::cout<<"#############################################################"<<std::endl;
-// //         std::cout<<"[Newton] Residue before = \n"<<residue<<std::endl;
-// //         std::cout<<"[Newton] Residue.norm() before = "<<residue.norm()<<std::endl;
-// //         std::cout<<"[Newton] Pt before = \n"<<pt<<std::endl;
-            ++iterNum;
-            MatType Jac;
-            NumericalJacobiMatrix jmat(epsOrt);
-// //         std::cout<<"[Newton] Jacobi = \n"<<Jac<<std::endl;
-            //     // there is a trick to lose less precision here, see http://www.crbond.com/nonlinear.htm
-            jmat.computeJacobiMatrix(F, pt, Jac);
-//     // solve Jac * delta = -residue
-            PtType delta = solveSLE(Jac, -residue);
-            pt = pt + delta;
-            residue = F(pt);
-// //         std::cout<<"[Newton] Residue after = \n"<<residue<<std::endl;
-// //         std::cout<<"[Newton] Residue.norm() after = "<<residue.norm()<<std::endl;
-// //         std::cout<<"[Newton] Pt after = \n"<<pt<<std::endl;
-        }
-        double precision = l2norm(residue);
-// //     std::cout<<"[Newton] Final point: \n"<<pt<<std::endl;
-// //     std::cout<<"[Newton] Final precision: "<<precision<<std::endl;
-        successStatus = (precision < fixPtTol);
-        return pt;
-    }
-    bool getSuccessStatus()
-    {
-        return successStatus;
-    }
-};
+#include "newt_sol.h"
 
 void writeAttractorDataToFile(const int& i, const int& j, const runInfo& curResult, const Configuration& config, const std::vector<AshStateType>& trajectory)
 {
@@ -327,7 +241,10 @@ int main(int argc, char* argv[])
             auto params = config.getParameterValues(i, 0);//!
             std::cout<<"\n\n"<<i<<"/"<<(config.v2_N-1)<<" r = "<<params["r"]<<" a = "<<params["a"]<<" b = "<<params["b"]<<std::endl;
             bool fixPtSuccessStatus;
-            NewtonSolver ns(config);
+            NewtonSolver<PtType, MatType> ns(config.fixPtTol,
+                                             config.fixPtMaxIter,
+                                             config.jacobiNewtonEps,
+                                             config.fixPtEpsNewtonStep);
             PoincareMap pm(params, config);
             auto F = std::bind(&PoincareMap::residueMap, pm, std::placeholders::_1);
             pt = ns.performNewtonMethod(F, pt);
@@ -378,7 +295,10 @@ int main(int argc, char* argv[])
                     {
                         start = std::chrono::system_clock::now();
                         AshCrossSectionPtType prevApproximation = projectOnPoincareSection(results[i][j-1].fixedPoint);
-                        NewtonSolver ns(config);
+                        NewtonSolver<PtType, MatType> ns(config.fixPtTol,
+                                                         config.fixPtMaxIter,
+                                                         config.jacobiNewtonEps,
+                                                         config.fixPtEpsNewtonStep);
                         PoincareMap pm(params, config);
                         auto F = std::bind(&PoincareMap::residueMap, pm, std::placeholders::_1);
                         fixPt = ns.performNewtonMethod(F, prevApproximation);
@@ -407,7 +327,7 @@ int main(int argc, char* argv[])
                         std::cout<<"residue.norm() = "<<pm.residueMap(pt).norm()<<std::endl;
                         Eigen::Matrix3d Jac;
                         auto F = std::bind(&PoincareMap::poincareMap, pm, std::placeholders::_1);
-                        NumericalJacobiMatrix jmat(epsOrt);
+                        NumericalJacobiMatrix<PtType, MatType> jmat(epsOrt);
                         jmat.computeJacobiMatrix(F, pt, Jac);
                         Eigen::EigenSolver<Eigen::Matrix3d> es(Jac);
                         std::cout<<"Jacobi = \n"<<Jac<<std::endl;

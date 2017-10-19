@@ -9,15 +9,17 @@ CONFIG -= qt
 SOURCES += \
     ash5.cpp \
     ash5suite.cpp \
-    configuration.cpp
+    configuration.cpp \
 
 HEADERS += \
     ash5.h \
     dyn_utils.h \
-    configuration.h
+    configuration.h \
+    newt_sol.h \
+    num_jac.h \
 
-INCLUDEPATH += C:\cpp-libs\Eigen3\
-INCLUDEPATH += C:\cpp-libs\boost_1_65_0\
+INCLUDEPATH += C:\cpp_environment\Eigen3\
+INCLUDEPATH += C:\cpp_environment\boost_1_64_0\
 
 DISTFILES += \
     suite-config-2.ini

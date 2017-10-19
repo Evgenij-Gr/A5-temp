@@ -34,6 +34,7 @@ public:
     bool isConfigurationConsistent;
     double jacobiNewtonEps, jacobiFixPtTypeEps;
     double skipTime;
+    double fixPtEpsNewtonStep;
     /////////////////////////
     Configuration(int argc, char* argv[]);
     std::map<std::string, double> getParameterValues(int i, int j) const;

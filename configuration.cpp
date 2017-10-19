@@ -61,6 +61,7 @@ Configuration::Configuration(int argc, char* argv[])
     fixPtMaxIter = config_file.get<int>("FixedPointParams.fixPtMaxIter");
     jacobiNewtonEps = config_file.get<double>("FixedPointParams.jacobiNewtonEps");
     jacobiFixPtTypeEps = config_file.get<double>("FixedPointParams.jacobiFixPtTypeEps");
+    fixPtEpsNewtonStep = config_file.get<double>("FixedPointParams.fixPtEpsNewtonStep");
 /////////// Trajectory Params
     mapIterSkip = config_file.get<int>("TrajectoryParams.mapIterSkip");
     mapIterLast = config_file.get<int>("TrajectoryParams.mapIterLast");

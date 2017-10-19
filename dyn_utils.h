@@ -3,17 +3,6 @@
 
 #include <vector>
 
-#if BOOST_VERSION == 106400
-#include <boost/serialization/array_wrapper.hpp>
-#endif
-#include <boost/array.hpp>
-
-#include <boost/numeric/odeint.hpp>
-
-// #include <boost/numeric/odeint/external/eigen/eigen.hpp>
-
-using namespace boost::numeric::odeint;
-
 bool sameSign(double X, double Y, double zeroTol=1e-15)
 {
     return ((X > zeroTol) && (Y > zeroTol)) || ((X < -zeroTol) && (Y < -zeroTol));
