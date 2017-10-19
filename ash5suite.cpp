@@ -1,22 +1,15 @@
-#include <iostream>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-
 #include <boost/version.hpp>
 
 #if BOOST_VERSION == 106400
 #include <boost/serialization/array_wrapper.hpp>
 #endif
 
-#include <boost/array.hpp>
-#include <vector>
-#include <map>
 #include "ash5.h"
 #include "dyn_utils.h"
 
 #define EIGEN_DONT_PARALLELIZE
 #define EIGEN_DONT_ALIGN_STATICALLY
-#include <Eigen/Dense>
+//#include <Eigen/Dense>
 #include <chrono>
 #include <Eigen/Eigenvalues>
 #include <complex>
