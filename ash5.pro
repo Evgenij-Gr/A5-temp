@@ -8,21 +8,22 @@ CONFIG -= qt
 
 SOURCES += \
     ash5.cpp \
-    ash5suite.cpp \
-    configuration.cpp \
-    run_info.cpp
+#    ash5suite.cpp \
+#    configuration.cpp \
+#    run_info.cpp \
+    ash5tests.cpp
 
 HEADERS += \
     ash5.h \
     dyn_utils.h \
-    configuration.h \
+#    configuration.h \
     newt_sol.h \
     num_jac.h \
-    run_info.h
+#    run_info.h
 
 INCLUDEPATH += C:\cpp-libs\Eigen3\
 INCLUDEPATH += C:\cpp-libs\boost_1_65_0\
 
 DISTFILES += \
-    suite-config-2.ini \
+#    suite-config-2.ini \
     make-tests.py
