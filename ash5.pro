@@ -20,6 +20,7 @@ HEADERS += \
     newt_sol.h \
     num_jac.h \
 #    run_info.h
+    misc_defs.h
 
 INCLUDEPATH += C:\cpp-libs\Eigen3\
 INCLUDEPATH += C:\cpp-libs\boost_1_65_0\
