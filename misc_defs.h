@@ -50,15 +50,19 @@ public:
 
 class HarmonicOscillatorEvent
 {
+private:
+    double v;
 public:
-    double operator()(const HarmOscType& X)
+    HarmonicOscillatorEvent(const double& val=0): v(val){;}
+    double operator()(const HarmOscType& X) const
     {
         auto y = X[1];
-        return y;
+        return y-v;
     }
-    void adjustToSection(HarmOscType& X)
+    void adjustToSection(HarmOscType& X) const
     {
-        X[1] = 0.0;
+        //X[1] = v;
+        ;
     }
 };
 
@@ -104,6 +108,8 @@ public:
     }
     Vec3 residueMap(const Vec3& pt)
     {
+        // Henon map has two fixed points:
+        // [0, 0, 0] and [t, t, t] where t = (A+B+C)-1
         return (mapping(pt)-pt);
     }
     Mat3 jacobiMatrix(const Vec3& pt)
@@ -118,7 +124,7 @@ public:
         realJac.col(2) = Vec3({0, 1, A});
         return realJac;
     }
-    double valueOfCharacteristicEquation(const std::complex<double> &E)
+    double valueOfCharacteristicEquation(const std::complex<double> &E) const
     {
         //Jacobi matrix at origin is
         //[0 1 0]
