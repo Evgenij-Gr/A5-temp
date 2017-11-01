@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
                 testResult = std::all_of(trajectoryStorage.begin(),
                                      trajectoryStorage.end(),
                                      [](HarmOscType x){return (x[0]<0.0);});
-                std::cout<<"There is a reason why this one doesn't fail in my problem"
+                std::cout<<"There is a reason why this one doesn't fail in my problem:"
                 " I put pt on a cross-section and choose crossing direction"
                 " depending on where it moves"<<std::endl;
                 std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
@@ -126,10 +126,74 @@ int main(int argc, char* argv[])
             }
         }
     }
-    // Test: finding zeroes of sin-function
-    // Test: finding zeroes of affine-function
-    // Test: finding fixed points
-    // Test: eigenvalues and Jacobi matrix precision for Henon map
+    // Test: finding zeroes of simple functions
+    {
+        std::cout<<"\n\n[ARTIFICIAL FUNCTIONS TEST]"<<std::endl;
+        // ######################################
+        {
+            DummyRHS drhs;
+            DummyCos dcos;
+            double t0 = 0.0;
+            const double PI = std::acos(-1.0);
+            double dt = 2.0*PI;
+            bool testResult;
+            int iterMax = 5;
+            double atol = 1e-13;
+            double rtol = 1e-13;
+            double approximateReturnTime = 6.5;
+            double evtTolerance = 1e-13;
+            double timeSkip = 1e-3;
+            {
+                std::cout<<"\n@Finding ascending zeroes of cosine function on segment"<<std::endl;
+                double crossingDirection = 1.0;
+                double trueEventCoordinate = 3.0*PI/2.0;
+                EventCalculator<DummyRHS, DummyCos, double> evcalc(atol, rtol,
+                                                       approximateReturnTime,
+                                                       crossingDirection,
+                                                       iterMax,evtTolerance,
+                                                       timeSkip);
+                auto trajectoryStorage = evcalc.findEvents(drhs, dcos, t0, dt);
+                std::cout<<"Real event coordinate: "<<trueEventCoordinate<<std::endl;
+                std::cout<<"Events found: "<<trajectoryStorage.size()<<std::endl;
+                std::cout<<"Numerical event coordinate: "<<trajectoryStorage[0]<<std::endl;
+                {
+                    std::cout<<"[TEST] Must have found one crossing"<<std::endl;
+                    testResult = (trajectoryStorage.size() == 1);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+                {
+                    std::cout<<"[TEST] Crossing is close to real point"<<std::endl;
+                    testResult = (std::abs(trajectoryStorage[0]-trueEventCoordinate)<evtTolerance);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+            }
+            {
+                std::cout<<"\n@Finding descending zeroes of cosine function on segment"<<std::endl;
+                double crossingDirection = -1.0;
+                double trueEventCoordinate = PI/2.0;
+                EventCalculator<DummyRHS, DummyCos, double> evcalc(atol, rtol,
+                                                       approximateReturnTime,
+                                                       crossingDirection,
+                                                       iterMax,evtTolerance,
+                                                       timeSkip);
+                auto trajectoryStorage = evcalc.findEvents(drhs, dcos, t0, dt);
+                std::cout<<"Real event coordinate: "<<trueEventCoordinate<<std::endl;
+                std::cout<<"Events found: "<<trajectoryStorage.size()<<std::endl;
+                std::cout<<"Numerical event coordinate: "<<trajectoryStorage[0]<<std::endl;
+                {
+                    std::cout<<"[TEST] Must have found one crossing"<<std::endl;
+                    testResult = (trajectoryStorage.size() == 1);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+                {
+                    std::cout<<"[TEST] Crossing is close to real point"<<std::endl;
+                    testResult = (std::abs(trajectoryStorage[0]-trueEventCoordinate)<evtTolerance);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+            }
+        }
+    }
+    // Test: eigenvalues and Jacobi matrix precision and fixed points for Henon map
     {
         std::cout<<"\n\n[HENON MAP TESTS]"<<std::endl;
         {
@@ -145,6 +209,8 @@ int main(int argc, char* argv[])
             Mat3 Jac;
             njm.computeJacobiMatrix(F, pt,Jac);
             Eigen::EigenSolver<Mat3> es(Jac);
+            // #################################################################
+            std::cout<<"[[Eigenvalues and Jacobi]]"<<std::endl;
             {
                 std::cout<<"[Test] Eigenvalues are roots of characteristic"
                            " equation with high precision"<<std::endl;
@@ -157,22 +223,93 @@ int main(int argc, char* argv[])
                 for (int i = 0; i<3; i++)
                 {
                     auto ev = eigvals[i];
-                    std::cout<<"ev["<<i<<"] = "<<ev<<", f(ev["<<i<<"]) = "<<hm.valueOfCharacteristicEquation(ev)<<std::endl;
+                    std::cout<<"ev["<<i<<"] = "<<ev<<", "
+                               "f(ev["<<i<<"]) = "<<
+                               hm.valueOfCharacteristicEquation(ev)<<std::endl;
                 }
+                std::cout<<"Precision is "<<eigvPrecision<<std::endl;
                 testResult = std::all_of(eigvals.begin(), eigvals.end(),
                                          [hm, eigvPrecision]
                                          (std::complex<double> x)
-                {return (std::abs(hm.valueOfCharacteristicEquation(x))<eigvPrecision);});
+                {return (std::abs(hm.valueOfCharacteristicEquation(x))
+                         <eigvPrecision);});
                 std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
             }
+            // #################################################################
+
             {
-                std::cout<<"[Test] Numerical Jacobi matrix is close to real Jacobi matrix"<<std::endl;
+                std::cout<<"[Test] Numerical Jacobi matrix is close to real "
+                           "Jacobi matrix"<<std::endl;
                 std::cout<<"Numerical Jacobi = \n"<<Jac<<std::endl;
                 std::cout<<"Real Jacobi = \n"<<hm.jacobiMatrix(pt)<<std::endl;
                 auto errFrobeniusNorm = (Jac-hm.jacobiMatrix(pt)).norm();
                 std::cout<<"Frobenius norm of error: "<<errFrobeniusNorm<<std::endl;
+                std::cout<<"Jacobi precision is "<<jacFrobPrecision<<std::endl;
                 testResult = (errFrobeniusNorm < jacFrobPrecision );
                 std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+            }
+
+            // #################################################################
+            std::cout<<"[[Fixed points]]"<<std::endl;
+            {
+                std::cout<<"[Test] (t, t, t) where t = (A+B+C) - 1 is a fixed "
+                           "point"<<std::endl;
+                double t = (a+b+c - 1.0);
+                Vec3 pt = {t, t, t};
+                double residue = hm.residueMap(pt).norm();
+                double precision = 1e-14;
+                std::cout<<"Residue of HM(t, t, t): "<<residue<<std::endl;
+                std::cout<<"Precision is "<<precision<<std::endl;
+                testResult = (residue < precision);
+                std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+            }
+            {
+                std::cout<<"[Test] (0.5*t, 0.5*t, 0.5*t) where t = (A+B+C) - 1 is not a fixed point"<<std::endl;
+                double t = 0.5*(a+b+c - 1.0);
+                Vec3 pt = {t, t, t};
+                double residue = hm.residueMap(pt).norm();
+                double precision = 1e-14;
+                std::cout<<"Residue of HM(t, t, t): "<<residue<<std::endl;
+                std::cout<<"Precision is "<<precision<<std::endl;
+                testResult = (residue > precision);
+                std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+            }
+            {
+                std::cout<<"\n@Start from (0.9*t, 0.9*t,0.9*t) where "
+                           "t = (A+B+C) - 1 -- find a fixed point"<<std::endl;
+                double t = 0.9*(a+b+c - 1.0);
+                Vec3 pt = {t, t, t};
+                double fixPtTol = 1e-14;
+                NewtonSolver<Vec3, Mat3> ns(fixPtTol, 20, 1e-8, 1.0);
+                auto G = std::bind(&HenonMap::residueMap, hm,
+                                   std::placeholders::_1);
+                pt = ns.performNewtonMethod(G, pt);
+                {
+                    std::cout<<"[TEST] Numerical fixed point meets precision for"
+                               " residue"<<std::endl;
+                    double residue = hm.residueMap(pt).norm();
+                    std::cout<<"Residue of HM(t, t, t): "<<residue<<std::endl;
+                    std::cout<<"Precision is "<<fixPtTol<<std::endl;
+                    testResult = (residue < fixPtTol);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+                {
+                    std::cout<<"[TEST] Numerical fixed point is close to real "
+                               "fixed point"<<std::endl;
+                    std::cout<<"Numeric fixed point: \n"<<pt<<std::endl;
+                    double w = (a+b+c -1.0);
+                    Vec3 fpt = {w, w, w};
+                    std::cout<<"Real fixed point: \n"<<fpt<<std::endl;
+                    double residue = (fpt - pt).norm();
+                    std::cout<<"Norm of residue: "<<residue<<std::endl;
+                    testResult = (residue < fixPtTol);
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
+                {
+                    std::cout<<"[TEST] Solver returned success status"<<std::endl;
+                    testResult = ns.getSuccessStatus();
+                    std::cout<<((testResult)?("PASSED"):("FAILED"))<<std::endl;
+                }
             }
 
         }

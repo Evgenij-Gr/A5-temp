@@ -2,8 +2,8 @@
 #define MISC_DEFS_H
 
 #include "newt_sol.h"
-#include "ash5.h"
 #include "dyn_utils.h"
+#include "ash5.h"
 #include <Eigen/Dense>
 
 // This dummy system is needed for emulating
@@ -15,6 +15,22 @@ public:
     void operator()(const double& X, double& dxdt, double t)
     {
         dxdt = 1;
+    }
+};
+
+class DummyCos
+{
+private:
+    double v;
+public:
+    DummyCos(const double& V = 0.): v(V){;}
+    double operator()(const double& X) const
+    {
+        return std::cos(X);
+    }
+    void adjustToSection(const double& X)
+    {
+        ;
     }
 };
 
@@ -188,6 +204,23 @@ public:
             iter++;
             startTime += approximateReturnTime;
         }
+        return trajectoryStorage;
+    }
+    std::vector<TStateType> findEvents(System S, Event E, TStateType startPt, double maxIntegrationTime)
+    {
+        std::vector<TStateType> trajectoryStorage;
+        int maxEvtsCapacity = iterMax + 1;
+        trajectoryStorage.reserve(maxEvtsCapacity);
+        auto dopri5dense = make_dense_output(atol,
+                                             rtol,
+                                             runge_kutta_dopri5<TStateType>());
+        auto observer = EventObserver<Event,decltype(dopri5dense),
+                System,TStateType>(S,E,dopri5dense, trajectoryStorage,
+                                   crossingDirection, eventTolerance,
+                                   timeSkip);
+        auto pt = startPt;
+        // since the system is autonomous we can do this trick
+        integrate_adaptive(dopri5dense, S, pt, 0.0, maxIntegrationTime, 1e-12, observer);
         return trajectoryStorage;
     }
 };

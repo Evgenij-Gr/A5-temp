@@ -2,6 +2,7 @@
 #define DYN_UTILS
 
 #include <vector>
+#include <cmath>
 
 bool sameSign(double X, double Y, double zeroTol=1e-15)
 {
