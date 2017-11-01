@@ -3,6 +3,8 @@
 
 #include "configuration.h"
 #include <complex>
+#include <vector>
+#include <array>
 
 struct runInfo
 {
