@@ -1,5 +1,7 @@
 #include "ash5.h"
 
+#include <cmath>
+
 using std::sin;
 using std::cos;
 
