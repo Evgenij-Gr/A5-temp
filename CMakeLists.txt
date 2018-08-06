@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.8)
+
+project(ash5-cmake)
+set(BOOST_PATH "C:/cpp-libs/boost_1_65_0" CACHE PATH "Path to Boost library")
+#find_package(Boost REQUIRED)
+set(EIGEN_PATH "C:/cpp-libs/Eigen3" CACHE PATH "Path to Eigen3 library")
+#find_package(Eigen3 REQUIRED)
+set(CMAKE_CXX_STANDARD 11)
+include_directories("${BOOST_PATH}" "${EIGEN_PATH}")
+#include_directories("${EIGEN_PATH}")
+add_executable("ash5-tests" "ash5tests.cpp" "suite-config-2.ini")
+#target_link_libraries("ash5-suite" Boost::boost)
+#target_link_libraries("ash5-suite" Eigen3::Eigen)

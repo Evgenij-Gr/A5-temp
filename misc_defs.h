@@ -3,7 +3,6 @@
 
 #include "newt_sol.h"
 #include "dyn_utils.h"
-#include "ash5.h"
 #include <Eigen/Dense>
 
 // This dummy system is needed for emulating
