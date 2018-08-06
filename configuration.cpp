@@ -103,6 +103,13 @@ Configuration::Configuration(int argc, char* argv[])
         v2_min = config_file.get<double>("OdeSystem.a");
         v2_max = config_file.get<double>("OdeSystem.a");
     }
+/////////// Flow Params ///////////
+    flowInitPoint = {config_file.get<double>("Flow.g1"),
+                     config_file.get<double>("Flow.g2"),
+                     config_file.get<double>("Flow.g3"),
+                     config_file.get<double>("Flow.g4")};
+    flowMaxTime = config_file.get<double>("Flow.maxTime");
+    timeStep = config_file.get<double>("Flow.timeStep");
 // also the crossing direction can be defined beforehand
     Ashwin5osc system(rInit, aInit, bInit);
     Ash_Section_Event evt;

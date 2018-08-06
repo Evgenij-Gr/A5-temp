@@ -35,6 +35,9 @@ public:
     double jacobiNewtonEps, jacobiFixPtTypeEps;
     double skipTime;
     double fixPtEpsNewtonStep;
+    AshStateType flowInitPoint;
+    double flowMaxTime;
+    double timeStep;
     /////////////////////////
     Configuration(int argc, char* argv[]);
     std::map<std::string, double> getParameterValues(int i, int j) const;

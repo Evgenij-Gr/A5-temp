@@ -130,4 +130,20 @@ public:
     }
 };
 
+
+template<class TStateType>
+class simpleWriter
+{
+public:
+    std::vector<TStateType>& vStates;
+    std::vector<double>& vTimes;
+    simpleWriter(std::vector<TStateType>& vSts, std::vector<double>& vTs):
+        vStates(vSts), vTimes(vTs) {;}
+    void operator()(const TStateType &X, double t)
+    {
+        vStates.push_back(X);
+        vTimes.push_back(t);
+    }
+};
+
 #endif
