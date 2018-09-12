@@ -16,7 +16,7 @@ public:
     AshStateType initialFixedPoint;
     std::string v1_name, v2_name;
     double v1_min, v1_max, v2_min, v2_max;
-    int v2_N, v1_N;
+    int v2_N, v1_N, v2_att_stride, v1_att_stride;
     int mapIterSkip, mapIterLast;
     struct UsageFlags
     {

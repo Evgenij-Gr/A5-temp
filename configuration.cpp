@@ -72,12 +72,14 @@ Configuration::Configuration(int argc, char* argv[])
         v2_min  = config_file.get<double>("Single.v_min");
         v2_max  = config_file.get<double>("Single.v_max");
         v2_name = config_file.get<std::string>("Single.v_name");
+        v2_att_stride = config_file.get<int>("Single.v_att_stride");
 
         v1_N    = 1;
         const std::array<std::string, 3> allParameterNames = {"r", "a", "b"};
         v1_name = *std::find_if(std::begin(allParameterNames), std::end(allParameterNames), [=](const std::string& s){return (v2_name != s);});
         v1_min  = config_file.get<double>("OdeSystem."+v1_name);
         v1_max  = config_file.get<double>("OdeSystem."+v1_name);
+        v1_att_stride = 0;
     }
     else if (runMode=="Biparametric")
     {
@@ -85,11 +87,13 @@ Configuration::Configuration(int argc, char* argv[])
         v1_min  = config_file.get<double>("Biparametric.v1_min");
         v1_max  = config_file.get<double>("Biparametric.v1_max");
         v1_name = config_file.get<std::string>("Biparametric.v1_name");
+        v1_att_stride = config_file.get<int>("Biparametric.v1_att_stride");
 
         v2_N    = config_file.get<int>("Biparametric.v2_N")+1;
         v2_min  = config_file.get<double>("Biparametric.v2_min");
         v2_max  = config_file.get<double>("Biparametric.v2_max");
         v2_name = config_file.get<std::string>("Biparametric.v2_name");
+        v2_att_stride = config_file.get<int>("Biparametric.v2_att_stride");
     }
     else if (runMode=="Once")
     {
@@ -97,11 +101,13 @@ Configuration::Configuration(int argc, char* argv[])
         v1_N = 1;
         v1_min = config_file.get<double>("OdeSystem.r");
         v1_max = config_file.get<double>("OdeSystem.r");
+        v1_att_stride = 0;
 
         v2_name = "a";
         v2_N = 1;
         v2_min = config_file.get<double>("OdeSystem.a");
         v2_max = config_file.get<double>("OdeSystem.a");
+        v2_att_stride = 0;
     }
     else if (runMode=="Flow")
     {
@@ -114,6 +120,8 @@ Configuration::Configuration(int argc, char* argv[])
         timeStep = config_file.get<double>("Flow.timeStep");
     }
 // also the crossing direction can be defined beforehand
+// a bad practice, really: assumes that we started from section, which isn't
+// always true
     Ashwin5osc system(rInit, aInit, bInit);
     Ash_Section_Event evt;
     AshStateType gamma0 = initialFixedPoint;

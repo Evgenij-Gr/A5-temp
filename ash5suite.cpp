@@ -230,8 +230,20 @@ int main(int argc, char* argv[])
                             std::cout<<"eigv["<<k<<"] = "<<es.eigenvalues()[k]<<" (abs = "<<std::abs(es.eigenvalues()[k])<<")"<<std::endl;
                         }
                     }
-                    bool isAttractorCalculationNeeded = config.flags.isLyapNeeded || config.flags.isDistNeeded || config.flags.isPlotNeeded;
-                    if (isAttractorCalculationNeeded)
+                    bool isAttractorCalculationNeeded = config.flags.isLyapNeeded
+                                                     || config.flags.isDistNeeded
+                                                     || config.flags.isPlotNeeded;
+                    bool rowStride(true), colStride(true);
+                    if (config.v2_att_stride != 0)
+                    {
+                        rowStride = ((i % (config.v2_att_stride+1)) == 0);
+                    }
+                    if (config.v1_att_stride != 0)
+                    {
+                        colStride = ((j % (config.v1_att_stride+1)) == 0);
+                    }
+                    bool strideCondition = rowStride && colStride;
+                    if (isAttractorCalculationNeeded && strideCondition)
                     {
                     // Calculate attractor
                         AshCrossSectionPtType nearPt = fixPt + AshCrossSectionPtType({1.0, 0.0, 0.0}) * 0.001; // MAGIC CONSTANT HERE!!!
