@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
         const Configuration config(argc, argv);
         if (!config.isConfigurationConsistent)
         {
-            std::cerr<<"Config file is not consistent, terminating program"<<std::endl;
+            std::cout<<"Config file is not consistent, terminating program"<<std::endl;
             return 1;
         }
         double rCurrent = config.rInit;

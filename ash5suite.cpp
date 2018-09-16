@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
         const Configuration config(argc, argv);
         if (!config.isConfigurationConsistent)
         {
-            std::cerr<<"Config file is not consistent, terminating program"<<std::endl;
+            std::cout<<"Config file is not consistent, terminating program"<<std::endl;
             return 1;
         }
      // reserve space for storing results
@@ -283,6 +283,10 @@ int main(int argc, char* argv[])
                                 std::cout<<"Saving parameters and attractor data to external file"<<std::endl;
                                 writeAttractorDataToFile(i, j, curResult, config, trajectory);
                             }
+                        }
+                        else
+                        {
+                            std::cout<<"[WARNING] Attractor computation has been failed"<<std::endl;
                         }
                     }
                 }

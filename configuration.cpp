@@ -10,7 +10,7 @@ Configuration::Configuration(int argc, char* argv[])
     boost::property_tree::ini_parser::read_ini(pathToINIfile, config_file);
     if (!checkConfigFileForConsistency(config_file))
     {
-        std::cerr<<"Config file is not consistent, terminating program"<<std::endl;
+        std::cout<<"Config file is not consistent, terminating program"<<std::endl;
         isConfigurationConsistent = false;
     }
     else
@@ -173,7 +173,7 @@ bool Configuration::checkConfigFileForConsistency(boost::property_tree::ptree co
     {
         if (config.get<double>("Single.v_min") != config.get<double>("OdeSystem."+config.get<std::string>("Single.v_name")))
         {
-            std::cerr<<"Config error: [Single.v_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Single.v_name")<<"]"<<std::endl;
+            std::cout<<"Config error: [Single.v_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Single.v_name")<<"]"<<std::endl;
             hasNoErrors = false;
         }
     }
@@ -181,12 +181,12 @@ bool Configuration::checkConfigFileForConsistency(boost::property_tree::ptree co
     {
         if (config.get<double>("Biparametric.v1_min") != config.get<double>("OdeSystem."+config.get<std::string>("Biparametric.v1_name")))
         {
-            std::cerr<<"Config error: [Biparametric.v1_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Biparametric.v1_name")<<"]"<<std::endl;
+            std::cout<<"Config error: [Biparametric.v1_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Biparametric.v1_name")<<"]"<<std::endl;
             hasNoErrors = false;
         }
         if (config.get<double>("Biparametric.v2_min") != config.get<double>("OdeSystem."+config.get<std::string>("Biparametric.v2_name")))
         {
-            std::cerr<<"Config error: [Biparametric.v2_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Biparametric.v2_name")<<"]"<<std::endl;
+            std::cout<<"Config error: [Biparametric.v2_min] doesn't coincide with [OdeSystem."<<config.get<std::string>("Biparametric.v2_name")<<"]"<<std::endl;
             hasNoErrors = false;
         }
     }
